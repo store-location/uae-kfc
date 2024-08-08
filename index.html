@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KFC Stores UAE</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        body {
+    font-family: Friz Quadrata, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100vh;
+    overflow: hidden;
+}
+
+h1 {
+    text-align: left;
+    color: #d62300;
+    margin: 10px 0;
+    font-size: 2.5em;
+    z-index: 1000;
+    background-color: #ffffffd9; /* Semi-transparent background */
+    padding: 10px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+#map {
+    flex-grow: 1;
+    width: 100%;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+#nearest-store-button {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    padding: 10px 20px;
+    background-color: #d62300;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    z-index: 1001;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    transition: background-color 0.3s, transform 0.3s;
+}
+
+#nearest-store-button:hover {
+    background-color: #ff6347;
+    transform: scale(1.05);
+}
+
+@media (max-width: 768px) {
+    h1 {
+        font-size: 1.8em;
+    }
+
+    #nearest-store-button {
+        padding: 8px 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    h1 {
+        font-size: 1.5em;
+        padding: 5px;
+    }
+
+    #nearest-store-button {
+        padding: 6px 12px;
+    }
+}   
+ </style>
+</head>
+<body>
+    <h1>KFC Stores UAE</h1>
+    <div id="map"></div>
+    <button id="nearest-store-button" onclick="getLocation()">Find Nearest Store</button>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+// Custom KFC pin icon
+        const kfcIcon = L.icon({
+            iconUrl: 'https://global.kfc.com/images/logo.svg', // Replace with a correct URL or local path to your KFC icon
+            iconSize: [38, 45], // size of the icon
+            iconAnchor: [22, 45], // point of the icon which will correspond to marker's location
+            popupAnchor: [-3, -76] // point from which the popup should open relative to the iconAnchor
+        });
+
+        // Your store locations
+        const stores = [
+    {
+        "name": "KFC Palm Jumeirah",
+        "lat": 25.1263294,
+        "lng": 55.1234511,
+        "url": "https://www.google.com/maps?q=25.1263294,55.1234511"
+    },
+    {
+        "name": "KFC, Al Barsha, Dubai",
+        "lat": 25.1185839,
+        "lng": 55.2038915,
+        "url": "https://www.google.com/maps?q=25.1185839,55.2038915"
+    },
+    {
+        "name": "KFC - Fujairah",
+        "lat": 25.1255446,
+        "lng": 56.3014732,
+        "url": "https://www.google.com/maps?q=25.1255446,56.3014732"
+    },
+    {
+        "name": "Khalifa City B - KFC",
+        "lat": 24.4294908,
+        "lng": 54.6192755,
+        "url": "https://www.google.com/maps?q=24.4294908,54.6192755"
+    },
+    {
+        "name": "KFC - Al Tallah branch",
+        "lat": 25.3661031999999,
+        "lng": 55.5112683,
+        "url": "https://www.google.com/maps?q=25.3661031999999,55.5112683"
+    },
+    {
+        "name": "KFC AL Maqtaa Mall ",
+        "lat": 24.3974624,
+        "lng": 54.4981807,
+        "url": "https://www.google.com/maps?q=24.3974624,54.4981807"
+    },
+    {
+        "name": "KFC al rahmania",
+        "lat": 25.3085693,
+        "lng": 55.5716448999999,
+        "url": "https://www.google.com/maps?q=25.3085693,55.5716448999999"
+    },
+    {
+        "name": "KFC Jurf",
+        "lat": 25.4186178999999,
+        "lng": 55.5403059,
+        "url": "https://www.google.com/maps?q=25.4186178999999,55.5403059"
+    },
+    {
+        "name": "KFC- City Centre Al Zahia",
+        "lat": 25.3150323,
+        "lng": 55.454989,
+        "url": "https://www.google.com/maps?q=25.3150323,55.454989"
+    },
+    {
+        "name": "KFC ALYAHER",
+        "lat": 24.2204812,
+        "lng": 55.5428899,
+        "url": "https://www.google.com/maps?q=24.2204812,55.5428899"
+    },
+    {
+        "name": "KFC City Stay Building Al Barsha Road ",
+        "lat": 25.1130723,
+        "lng": 55.2067116,
+        "url": "https://www.google.com/maps?q=25.1130723,55.2067116"
+    },
+    {
+        "name": "KFC  Al Bedea Suburb",
+        "lat": 25.2570065,
+        "lng": 55.5194421,
+        "url": "https://www.google.com/maps?q=25.2570065,55.5194421"
+    },
+    {
+        "name": "KFC Al Yahar",
+        "lat": 24.2204812,
+        "lng": 55.5428899,
+        "url": "https://www.google.com/maps?q=24.2204812,55.5428899"
+    },
+    {
+        "name": "KFC Jurf",
+        "lat": 25.4186178999999,
+        "lng": 55.5403059,
+        "url": "https://www.google.com/maps?q=25.4186178999999,55.5403059"
+    },
+    {
+        "name": "KFC Al Zahia City Center",
+        "lat": 25.3150323,
+        "lng": 55.454989,
+        "url": "https://www.google.com/maps?q=25.3150323,55.454989"
+    },
+    {
+        "name": "KFC Adnoc mirdif",
+        "lat": 25.2139557,
+        "lng": 55.4250192999999,
+        "url": "https://www.google.com/maps?q=25.2139557,55.4250192999999"
+    },
+    {
+        "name": "KFC EMARAT WOSTA",
+        "lat": 25.1228017999999,
+        "lng": 55.9388788,
+        "url": "https://www.google.com/maps?q=25.1228017999999,55.9388788"
+    },
+    {
+        "name": "KFC Dubai Creek Harbour",
+        "lat": 25.2045043,
+        "lng": 55.3427394,
+        "url": "https://www.google.com/maps?q=25.2045043,55.3427394"
+    },
+    {
+        "name": "KFC, Zayed Al Awwal Street",
+        "lat": 24.2364089,
+        "lng": 55.7203281,
+        "url": "https://www.google.com/maps?q=24.2364089,55.7203281"
+    },
+    {
+        "name": "Jumeirah Park Pavilion - KFC",
+        "lat": 25.0426832,
+        "lng": 55.1593832,
+        "url": "https://www.google.com/maps?q=25.0426832,55.1593832"
+    },
+    {
+        "name": "KFC-Lulu Express",
+        "lat": 25.2829461999999,
+        "lng": 56.3567026,
+        "url": "https://www.google.com/maps?q=25.2829461999999,56.3567026"
+    },
+    {
+        "name": "KFC Sajaa",
+        "lat": 25.3354537,
+        "lng": 55.6124101,
+        "url": "https://www.google.com/maps?q=25.3354537,55.6124101"
+    },
+    {
+        "name": "KFC - Qawasim Corniche Branch",
+        "lat": 25.7805924,
+        "lng": 55.9411768999999,
+        "url": "https://www.google.com/maps?q=25.7805924,55.9411768999999"
+    },
+    {
+        "name": "KFC ENOC 1603 AL WARSAN",
+        "lat": 25.1431471,
+        "lng": 55.4220197,
+        "url": "https://www.google.com/maps?q=25.1431471,55.4220197"
+    },
+    {
+        "name": "KFC Metro Link",
+        "lat": 25.0463284,
+        "lng": 55.1180590999999,
+        "url": "https://www.google.com/maps?q=25.0463284,55.1180590999999"
+    },
+    {
+        "name": "KFC Drive Thru",
+        "lat": 25.4643807999999,
+        "lng": 55.5943205999999,
+        "url": "https://www.google.com/maps?q=25.4643807999999,55.5943205999999"
+    },
+    {
+        "name": "KFC - Dubai Mall",
+        "lat": 25.1971068,
+        "lng": 55.276678,
+        "url": "https://www.google.com/maps?q=25.1971068,55.276678"
+    },
+    {
+        "name": "KFC Diyafa Street",
+        "lat": 25.2357349,
+        "lng": 55.2772022,
+        "url": "https://www.google.com/maps?q=25.2357349,55.2772022"
+    },
+    {
+        "name": "KFC, Meena Bazaar",
+        "lat": 25.2625219,
+        "lng": 55.2947628999999,
+        "url": "https://www.google.com/maps?q=25.2625219,55.2947628999999"
+    },
+    {
+        "name": "KFC - Dubai Knowledge Park",
+        "lat": 25.1029381,
+        "lng": 55.1619788999999,
+        "url": "https://www.google.com/maps?q=25.1029381,55.1619788999999"
+    },
+    {
+        "name": "KFC - Terminal 2, Dubai International Airport Area",
+        "lat": 25.2661949,
+        "lng": 55.3567778,
+        "url": "https://www.google.com/maps?q=25.2661949,55.3567778"
+    },
+    {
+        "name": "KFC The Greens - Dubai",
+        "lat": 25.0936124,
+        "lng": 55.1680661,
+        "url": "https://www.google.com/maps?q=25.0936124,55.1680661"
+    },
+    {
+        "name": "KFC, Al Hamriya ",
+        "lat": 25.278617,
+        "lng": 55.3446329999999,
+        "url": "https://www.google.com/maps?q=25.278617,55.3446329999999"
+    },
+    {
+        "name": "KFC, Qusais 2 Branch ",
+        "lat": 25.2652768,
+        "lng": 55.3833585,
+        "url": "https://www.google.com/maps?q=25.2652768,55.3833585"
+    },
+    {
+        "name": "KFC Enoc DIP",
+        "lat": 24.9816508,
+        "lng": 55.1866674,
+        "url": "https://www.google.com/maps?q=24.9816508,55.1866674"
+    },
+    {
+        "name": "KFC JLT",
+        "lat": 25.0692647,
+        "lng": 55.1422688,
+        "url": "https://www.google.com/maps?q=25.0692647,55.1422688"
+    },
+    {
+        "name": "KFC Abu Kadra",
+        "lat": 25.1922888,
+        "lng": 55.3088977,
+        "url": "https://www.google.com/maps?q=25.1922888,55.3088977"
+    },
+    {
+        "name": "KFC Bay Avenue.",
+        "lat": 25.1894979,
+        "lng": 55.2630567,
+        "url": "https://www.google.com/maps?q=25.1894979,55.2630567"
+    },
+    {
+        "name": "KFC, Mercato Mall",
+        "lat": 25.2160783,
+        "lng": 55.2529585,
+        "url": "https://www.google.com/maps?q=25.2160783,55.2529585"
+    },
+    {
+        "name": "KFC, Rashidiya",
+        "lat": 25.2290015,
+        "lng": 55.3907952,
+        "url": "https://www.google.com/maps?q=25.2290015,55.3907952"
+    },
+    {
+        "name": ", Banyas Square",
+        "lat": 25.2691501,
+        "lng": 55.3064276,
+        "url": "https://www.google.com/maps?q=25.2691501,55.3064276"
+    },
+    {
+        "name": "KFC, Al Barsha South",
+        "lat": 25.080993,
+        "lng": 55.2160729999999,
+        "url": "https://www.google.com/maps?q=25.080993,55.2160729999999"
+    },
+    {
+        "name": "KFC, Motor City",
+        "lat": 25.046556,
+        "lng": 55.2442779999999,
+        "url": "https://www.google.com/maps?q=25.046556,55.2442779999999"
+    },
+    {
+        "name": "KFC Mirdif south",
+        "lat": 25.2157369999999,
+        "lng": 55.4076309999999,
+        "url": "https://www.google.com/maps?q=25.2157369999999,55.4076309999999"
+    },
+    {
+        "name": "KFC Sahara Center",
+        "lat": 25.2978579999999,
+        "lng": 55.3723199999999,
+        "url": "https://www.google.com/maps?q=25.2978579999999,55.3723199999999"
+    },
+    {
+        "name": "KFC Enoc By-Pass Road",
+        "lat": 25.070494,
+        "lng": 55.3606346,
+        "url": "https://www.google.com/maps?q=25.070494,55.3606346"
+    },
+    {
+        "name": "KFC - Marina Mall",
+        "lat": 25.076487,
+        "lng": 55.140411,
+        "url": "https://www.google.com/maps?q=25.076487,55.140411"
+    },
+    {
+        "name": "KFC , Za'abeel",
+        "lat": 25.1989467999999,
+        "lng": 55.2834535999999,
+        "url": "https://www.google.com/maps?q=25.1989467999999,55.2834535999999"
+    },
+    {
+        "name": "KFC Sheikh Zayed",
+        "lat": 25.214408,
+        "lng": 55.276398,
+        "url": "https://www.google.com/maps?q=25.214408,55.276398"
+    },
+    {
+        "name": "KFC, QUSAIS GRAND LUBE",
+        "lat": 25.2835923,
+        "lng": 55.3737693,
+        "url": "https://www.google.com/maps?q=25.2835923,55.3737693"
+    },
+    {
+        "name": "KFC Drive Through",
+        "lat": 25.2281246,
+        "lng": 55.3844109,
+        "url": "https://www.google.com/maps?q=25.2281246,55.3844109"
+    },
+    {
+        "name": "KFC, Al Muraqqabat",
+        "lat": 25.2696549,
+        "lng": 55.3225116,
+        "url": "https://www.google.com/maps?q=25.2696549,55.3225116"
+    },
+    {
+        "name": "KFC, Mankhool",
+        "lat": 25.2490709,
+        "lng": 55.3002717,
+        "url": "https://www.google.com/maps?q=25.2490709,55.3002717"
+    },
+    {
+        "name": "KFC, Al Hamra Branch - Umm Al Quwain",
+        "lat": 25.5445418,
+        "lng": 55.5429026,
+        "url": "https://www.google.com/maps?q=25.5445418,55.5429026"
+    },
+    {
+        "name": "KFC Al Barsha Road",
+        "lat": 25.1150754,
+        "lng": 55.2062801,
+        "url": "https://www.google.com/maps?q=25.1150754,55.2062801"
+    },
+    {
+        "name": "KFC Al Metalaa Park",
+        "lat": 25.3710171,
+        "lng": 56.3478862,
+        "url": "https://www.google.com/maps?q=25.3710171,56.3478862"
+    },
+    {
+        "name": "kfc ajman corniche ajman",
+        "lat": 25.3987007,
+        "lng": 55.4774091,
+        "url": "https://www.google.com/maps?q=25.3987007,55.4774091"
+    },
+    {
+        "name": "KFC, Al Kuwait St, Al Sharq - Maysaloon",
+        "lat": 25.3587013,
+        "lng": 55.4051457,
+        "url": "https://www.google.com/maps?q=25.3587013,55.4051457"
+    },
+    {
+        "name": "KFC al tawoun street",
+        "lat": 25.3100775,
+        "lng": 55.3726672999999,
+        "url": "https://www.google.com/maps?q=25.3100775,55.3726672999999"
+    },
+    {
+        "name": "KFC BANIYAS - ABU DHABI",
+        "lat": 24.2868444,
+        "lng": 54.6416344999999,
+        "url": "https://www.google.com/maps?q=24.2868444,54.6416344999999"
+    },
+    {
+        "name": "KFC Bawabat AL SHARQ",
+        "lat": 24.3122896999999,
+        "lng": 54.6213231,
+        "url": "https://www.google.com/maps?q=24.3122896999999,54.6213231"
+    },
+    {
+        "name": "KFC, Tourist Club Abu Dhabi",
+        "lat": 24.4970116999999,
+        "lng": 54.3781301,
+        "url": "https://www.google.com/maps?q=24.4970116999999,54.3781301"
+    },
+    {
+        "name": "KFC Mushrif Mall ",
+        "lat": 24.434115,
+        "lng": 54.4135777,
+        "url": "https://www.google.com/maps?q=24.434115,54.4135777"
+    },
+    {
+        "name": "KFC Halwan",
+        "lat": 25.3457629999999,
+        "lng": 55.422649,
+        "url": "https://www.google.com/maps?q=25.3457629999999,55.422649"
+    },
+    {
+        "name": "KFC - Industrial Area",
+        "lat": 25.3127125,
+        "lng": 55.4480044999999,
+        "url": "https://www.google.com/maps?q=25.3127125,55.4480044999999"
+    },
+    {
+        "name": "KFC, Al Hamidiya, Ajman",
+        "lat": 25.4061111,
+        "lng": 55.5075,
+        "url": "https://www.google.com/maps?q=25.4061111,55.5075"
+    },
+    {
+        "name": "KFC-Al Rigga Road",
+        "lat": 25.2656350999999,
+        "lng": 55.3200285,
+        "url": "https://www.google.com/maps?q=25.2656350999999,55.3200285"
+    },
+    {
+        "name": "KFC Mega Mall",
+        "lat": 25.3451485,
+        "lng": 55.3987434,
+        "url": "https://www.google.com/maps?q=25.3451485,55.3987434"
+    },
+    {
+        "name": "KFC, Hamdan Branch ",
+        "lat": 24.4928603,
+        "lng": 54.3670182,
+        "url": "https://www.google.com/maps?q=24.4928603,54.3670182"
+    },
+    {
+        "name": "KFC restaurant, Ras Al-Khaimah",
+        "lat": 25.772357,
+        "lng": 55.9587949999999,
+        "url": "https://www.google.com/maps?q=25.772357,55.9587949999999"
+    },
+    {
+        "name": "KFC Al Rumailah ",
+        "lat": 25.4051117,
+        "lng": 55.4304819,
+        "url": "https://www.google.com/maps?q=25.4051117,55.4304819"
+    },
+    {
+        "name": "KFC Ajman Corniche",
+        "lat": 25.0687499999999,
+        "lng": 56.359722,
+        "url": "https://www.google.com/maps?q=25.0687499999999,56.359722"
+    },
+    {
+        "name": "KFC, Jebel Ali Village",
+        "lat": 25.0299643,
+        "lng": 55.1077173,
+        "url": "https://www.google.com/maps?q=25.0299643,55.1077173"
+    },
+    {
+        "name": "KFC - Mall Of Emirates",
+        "lat": 25.117554,
+        "lng": 55.2001039999999,
+        "url": "https://www.google.com/maps?q=25.117554,55.2001039999999"
+    },
+    {
+        "name": "KFC - Dubai Festival City",
+        "lat": 25.2225769,
+        "lng": 55.3516781999999,
+        "url": "https://www.google.com/maps?q=25.2225769,55.3516781999999"
+    },
+    {
+        "name": "KFC, Ibn Battuta Mall",
+        "lat": 25.0462526,
+        "lng": 55.1183287,
+        "url": "https://www.google.com/maps?q=25.0462526,55.1183287"
+    },
+    {
+        "name": "KFC at Al Fahidi Street ",
+        "lat": 25.264248,
+        "lng": 55.2876019,
+        "url": "https://www.google.com/maps?q=25.264248,55.2876019"
+    },
+    {
+        "name": "KFC Arabian Center",
+        "lat": 25.2361745,
+        "lng": 55.4357608,
+        "url": "https://www.google.com/maps?q=25.2361745,55.4357608"
+    },
+    {
+        "name": "KFC KFC. Al Ittihad Rd",
+        "lat": 25.3053668,
+        "lng": 55.3744482,
+        "url": "https://www.google.com/maps?q=25.3053668,55.3744482"
+    },
+    {
+        "name": "KFC, Ras Al Khor",
+        "lat": 25.204557,
+        "lng": 55.3428125,
+        "url": "https://www.google.com/maps?q=25.204557,55.3428125"
+    },
+    {
+        "name": "KFC - Al Quoz Industrial Area",
+        "lat": 25.1064291,
+        "lng": 55.2276268,
+        "url": "https://www.google.com/maps?q=25.1064291,55.2276268"
+    },
+    {
+        "name": "KFC, Mirdif",
+        "lat": 25.2323354,
+        "lng": 55.4350652,
+        "url": "https://www.google.com/maps?q=25.2323354,55.4350652"
+    },
+    {
+        "name": "KFC Al Warqaa",
+        "lat": 25.1955225,
+        "lng": 55.4034801,
+        "url": "https://www.google.com/maps?q=25.1955225,55.4034801"
+    },
+    {
+        "name": "KFC, Uptown Mirdif Mall",
+        "lat": 25.2239553,
+        "lng": 55.4269283,
+        "url": "https://www.google.com/maps?q=25.2239553,55.4269283"
+    },
+    {
+        "name": "KFC - Ajman",
+        "lat": 25.3702371,
+        "lng": 55.5553608,
+        "url": "https://www.google.com/maps?q=25.3702371,55.5553608"
+    },
+    {
+        "name": "KFC Dubai, Jumeirah Village",
+        "lat": 25.0624761,
+        "lng": 55.2044621999999,
+        "url": "https://www.google.com/maps?q=25.0624761,55.2044621999999"
+    },
+    {
+        "name": "KFC QUSAIS EPPCO",
+        "lat": 25.17777,
+        "lng": 55.23811,
+        "url": "https://www.google.com/maps?q=25.17777,55.23811"
+    },
+    {
+        "name": "KFC, International",
+        "lat": 25.1743358,
+        "lng": 55.403235,
+        "url": "https://www.google.com/maps?q=25.1743358,55.403235"
+    },
+    {
+        "name": "KFC Nashama",
+        "lat": 25.0096322,
+        "lng": 55.2871704,
+        "url": "https://www.google.com/maps?q=25.0096322,55.2871704"
+    },
+    {
+        "name": "KFC, Sharjah - Al Majaz 1 Corniche St",
+        "lat": 25.3379329,
+        "lng": 55.3867467,
+        "url": "https://www.google.com/maps?q=25.3379329,55.3867467"
+    },
+    {
+        "name": "KFC, JBR - Jumeirah Beach Residence Branch",
+        "lat": 25.0742675,
+        "lng": 55.1307434,
+        "url": "https://www.google.com/maps?q=25.0742675,55.1307434"
+    },
+    {
+        "name": "KFC, Ahmed Bin Makhtoum Al Maktoum Building",
+        "lat": 25.2308947,
+        "lng": 55.2874952,
+        "url": "https://www.google.com/maps?q=25.2308947,55.2874952"
+    },
+    {
+        "name": "KFC, Matajer - Aljurainah 2",
+        "lat": 25.2961872,
+        "lng": 55.4894634,
+        "url": "https://www.google.com/maps?q=25.2961872,55.4894634"
+    },
+    {
+        "name": "KFC, Al Nahda",
+        "lat": 25.2740324,
+        "lng": 55.3662343,
+        "url": "https://www.google.com/maps?q=25.2740324,55.3662343"
+    },
+    {
+        "name": "KFC Nakheel Mall",
+        "lat": 25.112972,
+        "lng": 55.1391939999999,
+        "url": "https://www.google.com/maps?q=25.112972,55.1391939999999"
+    },
+    {
+        "name": "KFC KFC - Last Exit South Jebel Ali",
+        "lat": 24.911483,
+        "lng": 54.9633059999999,
+        "url": "https://www.google.com/maps?q=24.911483,54.9633059999999"
+    },
+    {
+        "name": "KFC Yas Mall",
+        "lat": 24.4897067,
+        "lng": 54.6085528,
+        "url": "https://www.google.com/maps?q=24.4897067,54.6085528"
+    },
+    {
+        "name": "KFC Al Manar Mall",
+        "lat": 25.7856919,
+        "lng": 55.9645352,
+        "url": "https://www.google.com/maps?q=25.7856919,55.9645352"
+    },
+    {
+        "name": "KFC Kalba Maleha Adnoc -NoDelivery",
+        "lat": 25.1489788,
+        "lng": 55.8793310999999,
+        "url": "https://www.google.com/maps?q=25.1489788,55.8793310999999"
+    },
+    {
+        "name": "KFC, Airport Road, Al Danah",
+        "lat": 24.4733183,
+        "lng": 54.3681604999999,
+        "url": "https://www.google.com/maps?q=24.4733183,54.3681604999999"
+    },
+    {
+        "name": "KFC ADNOC Petrol Station,",
+        "lat": 24.4057069,
+        "lng": 54.6030358,
+        "url": "https://www.google.com/maps?q=24.4057069,54.6030358"
+    },
+    {
+        "name": "KFC  Al Dhaid",
+        "lat": 25.2665505,
+        "lng": 55.8842748,
+        "url": "https://www.google.com/maps?q=25.2665505,55.8842748"
+    },
+    {
+        "name": "KFC Maqam.",
+        "lat": 24.1839058,
+        "lng": 55.629071,
+        "url": "https://www.google.com/maps?q=24.1839058,55.629071"
+    },
+    {
+        "name": "KFC Sanaiya Al Ain",
+        "lat": 24.1976959,
+        "lng": 55.7494921,
+        "url": "https://www.google.com/maps?q=24.1976959,55.7494921"
+    },
+    {
+        "name": "KFC Al Jimmy",
+        "lat": 24.2271489,
+        "lng": 55.7387503,
+        "url": "https://www.google.com/maps?q=24.2271489,55.7387503"
+    },
+    {
+        "name": "KFC GHURAIR MALL",
+        "lat": 25.269139,
+        "lng": 55.316778,
+        "url": "https://www.google.com/maps?q=25.269139,55.316778"
+    },
+    {
+        "name": "KFC Al Wahda Mall",
+        "lat": 24.47035,
+        "lng": 54.373014,
+        "url": "https://www.google.com/maps?q=24.47035,54.373014"
+    },
+    {
+        "name": "KFC Fujairah City Center",
+        "lat": 25.1244234,
+        "lng": 56.3021928,
+        "url": "https://www.google.com/maps?q=25.1244234,56.3021928"
+    },
+    {
+        "name": "KFC - Madinat Zayed Branch",
+        "lat": 24.4833098,
+        "lng": 54.3663201,
+        "url": "https://www.google.com/maps?q=24.4833098,54.3663201"
+    },
+    {
+        "name": "KFC Al Danah",
+        "lat": 24.4883318,
+        "lng": 54.3563401,
+        "url": "https://www.google.com/maps?q=24.4883318,54.3563401"
+    },
+    {
+        "name": "KFC - Madinat Zayed Shopping Centre",
+        "lat": 24.4833082,
+        "lng": 54.3663234,
+        "url": "https://www.google.com/maps?q=24.4833082,54.3663234"
+    },
+    {
+        "name": "KFC Century Mall",
+        "lat": 25.1571929,
+        "lng": 56.3500937,
+        "url": "https://www.google.com/maps?q=25.1571929,56.3500937"
+    },
+    {
+        "name": "KFC Abu Dhabi - 28th Street ",
+        "lat": 24.3708108,
+        "lng": 54.5356946,
+        "url": "https://www.google.com/maps?q=24.3708108,54.5356946"
+    },
+    {
+        "name": "KFC Sweihat.",
+        "lat": 25.348081,
+        "lng": 55.461077,
+        "url": "https://www.google.com/maps?q=25.348081,55.461077"
+    },
+    {
+        "name": "KFC Mafraq",
+        "lat": 24.3221437,
+        "lng": 54.5887477,
+        "url": "https://www.google.com/maps?q=24.3221437,54.5887477"
+    },
+    {
+        "name": "KFC  Al Shamkhah",
+        "lat": 24.3868668,
+        "lng": 54.7221843,
+        "url": "https://www.google.com/maps?q=24.3868668,54.7221843"
+    },
+    {
+        "name": "KFC Bawadi Mal",
+        "lat": 24.160589,
+        "lng": 55.807175,
+        "url": "https://www.google.com/maps?q=24.160589,55.807175"
+    },
+    {
+        "name": "KFC - Abu Dhabi Mall",
+        "lat": 24.495838,
+        "lng": 54.3840749999999,
+        "url": "https://www.google.com/maps?q=24.495838,54.3840749999999"
+    },
+    {
+        "name": "KFC Hadbat Al Za'faranah",
+        "lat": 24.4451705999999,
+        "lng": 54.4034618999999,
+        "url": "https://www.google.com/maps?q=24.4451705999999,54.4034618999999"
+    },
+    {
+        "name": "KFC Foah Mall",
+        "lat": 24.343811,
+        "lng": 55.792769,
+        "url": "https://www.google.com/maps?q=24.343811,55.792769"
+    },
+    {
+        "name": "KFC Deerfield Mall",
+        "lat": 24.524459,
+        "lng": 54.6712885,
+        "url": "https://www.google.com/maps?q=24.524459,54.6712885"
+    },
+    {
+        "name": "KFC Khalifa Bin ",
+        "lat": 24.2247499,
+        "lng": 55.7603939,
+        "url": "https://www.google.com/maps?q=24.2247499,55.7603939"
+    },
+    {
+        "name": "KFC Marina Mall Ring Road",
+        "lat": 24.469997,
+        "lng": 54.351763,
+        "url": "https://www.google.com/maps?q=24.469997,54.351763"
+    },
+    {
+        "name": "KFC Deerfields Townsquare Mall",
+        "lat": 24.5249225,
+        "lng": 54.6721476,
+        "url": "https://www.google.com/maps?q=24.5249225,54.6721476"
+    },
+    {
+        "name": "KFC Mosafah Indestrial ",
+        "lat": 24.3727513,
+        "lng": 54.5204681,
+        "url": "https://www.google.com/maps?q=24.3727513,54.5204681"
+    },
+    {
+        "name": "KFC Shakhbout City",
+        "lat": 24.3568517,
+        "lng": 54.6147318999999,
+        "url": "https://www.google.com/maps?q=24.3568517,54.6147318999999"
+    },
+    {
+        "name": "KFC, Hamad Bin Abdulla Rd",
+        "lat": 25.1191542,
+        "lng": 56.3287877,
+        "url": "https://www.google.com/maps?q=25.1191542,56.3287877"
+    },
+    {
+        "name": "KFC, Matajer Al Juraina ",
+        "lat": 25.3525542999999,
+        "lng": 55.4519283,
+        "url": "https://www.google.com/maps?q=25.3525542999999,55.4519283"
+    },
+    {
+        "name": "KFC Oasis Mall Sharjah",
+        "lat": 25.3488653999999,
+        "lng": 55.4090920999999,
+        "url": "https://www.google.com/maps?q=25.3488653999999,55.4090920999999"
+    },
+    {
+        "name": "KFC, Al Dhait South",
+        "lat": 25.7540519,
+        "lng": 55.9109997,
+        "url": "https://www.google.com/maps?q=25.7540519,55.9109997"
+    },
+    {
+        "name": "KFC Enoc Petrol Station",
+        "lat": 25.1333414,
+        "lng": 55.3806984999999,
+        "url": "https://www.google.com/maps?q=25.1333414,55.3806984999999"
+    },
+    {
+        "name": "KFC, International City Branch",
+        "lat": 25.1586669999999,
+        "lng": 55.4045,
+        "url": "https://www.google.com/maps?q=25.1586669999999,55.4045"
+    },
+    {
+        "name": "KFC, UpTown Motor City",
+        "lat": 25.0450177,
+        "lng": 55.2397317,
+        "url": "https://www.google.com/maps?q=25.0450177,55.2397317"
+    },
+    {
+        "name": "KFC Hoshi Area - Maleha St ",
+        "lat": 25.2567594999999,
+        "lng": 55.5197105999999,
+        "url": "https://www.google.com/maps?q=25.2567594999999,55.5197105999999"
+    },
+    {
+        "name": "KFC - Mirdif City Centre",
+        "lat": 25.2161738999999,
+        "lng": 55.4090588,
+        "url": "https://www.google.com/maps?q=25.2161738999999,55.4090588"
+    },
+    {
+        "name": "KFC Al Gharayen",
+        "lat": 25.1775549999999,
+        "lng": 55.2945518,
+        "url": "https://www.google.com/maps?q=25.1775549999999,55.2945518"
+    },
+    {
+        "name": "KFC, Al Awir",
+        "lat": 25.208803,
+        "lng": 55.554902,
+        "url": "https://www.google.com/maps?q=25.208803,55.554902"
+    },
+    {
+        "name": "KFC Jebel Ali Free Zone Food Court",
+        "lat": 24.9680377,
+        "lng": 55.078236,
+        "url": "https://www.google.com/maps?q=24.9680377,55.078236"
+    },
+    {
+        "name": "KFC Drive Thru",
+        "lat": 25.1732014,
+        "lng": 55.2181968999999,
+        "url": "https://www.google.com/maps?q=25.1732014,55.2181968999999"
+    },
+    {
+        "name": "KFC Al Quoz Adnoc",
+        "lat": 25.1647891999999,
+        "lng": 55.2454178,
+        "url": "https://www.google.com/maps?q=25.1647891999999,55.2454178"
+    },
+    {
+        "name": "Kfc Circle Mall",
+        "lat": 25.0670033999999,
+        "lng": 55.2155105,
+        "url": "https://www.google.com/maps?q=25.0670033999999,55.2155105"
+    },
+    {
+        "name": "KFC, Jebel Ali Free Zone ",
+        "lat": 24.926806,
+        "lng": 55.000083,
+        "url": "https://www.google.com/maps?q=24.926806,55.000083"
+    },
+    {
+        "name": "KFC, DIP - Dubai Investments Park Branch ",
+        "lat": 25.0009971,
+        "lng": 55.1498001999999,
+        "url": "https://www.google.com/maps?q=25.0009971,55.1498001999999"
+    },
+    {
+        "name": "KFC, Dubai Hills Mall ",
+        "lat": 25.10025,
+        "lng": 55.2400559999999,
+        "url": "https://www.google.com/maps?q=25.10025,55.2400559999999"
+    },
+    {
+        "name": "KFC  Oasis Centre ",
+        "lat": 25.169273,
+        "lng": 55.2421511999999,
+        "url": "https://www.google.com/maps?q=25.169273,55.2421511999999"
+    },
+    {
+        "name": "KFC Montaser",
+        "lat": 25.8123342,
+        "lng": 55.9803598999999,
+        "url": "https://www.google.com/maps?q=25.8123342,55.9803598999999"
+    },
+    {
+        "name": "KFC  Falaj Hazza'",
+        "lat": 24.1704264999999,
+        "lng": 55.7105788999999,
+        "url": "https://www.google.com/maps?q=24.1704264999999,55.7105788999999"
+    },
+    {
+        "name": "KFC, Kenz Ajman",
+        "lat": 25.397605,
+        "lng": 55.5196128,
+        "url": "https://www.google.com/maps?q=25.397605,55.5196128"
+    },
+    {
+        "name": "KFC TASJEEL RAK ",
+        "lat": 25.7007905,
+        "lng": 55.9342581,
+        "url": "https://www.google.com/maps?q=25.7007905,55.9342581"
+    },
+    {
+        "name": "KFC Al Quoz",
+        "lat": 25.1643352999999,
+        "lng": 55.245608,
+        "url": "https://www.google.com/maps?q=25.1643352999999,55.245608"
+    },
+    {
+        "name": "KFC - Wasit",
+        "lat": 25.3666916,
+        "lng": 55.4496515999999,
+        "url": "https://www.google.com/maps?q=25.3666916,55.4496515999999"
+    },
+    {
+        "name": "KFC Outlet Mall",
+        "lat": 25.0716705,
+        "lng": 55.4021474,
+        "url": "https://www.google.com/maps?q=25.0716705,55.4021474"
+    },
+    {
+        "name": "KFC Al Khaleej Center",
+        "lat": 25.2569284,
+        "lng": 55.2954578999999,
+        "url": "https://www.google.com/maps?q=25.2569284,55.2954578999999"
+    },
+    {
+        "name": "KFC, Al Mirgab",
+        "lat": 25.3877889999999,
+        "lng": 55.418695,
+        "url": "https://www.google.com/maps?q=25.3877889999999,55.418695"
+    },
+    {
+        "name": "KFC Dubai Silicon Oasis ",
+        "lat": 25.1198183,
+        "lng": 55.3958357,
+        "url": "https://www.google.com/maps?q=25.1198183,55.3958357"
+    },
+    {
+        "name": " KFC - Dubai - 2GIS",
+        "lat": 25.056707,
+        "lng": 55.2702561,
+        "url": "https://www.google.com/maps?q=25.056707,55.2702561"
+    },
+    {
+        "name": "KFC - Nad Al Hamar",
+        "lat": 25.190054,
+        "lng": 55.3924837,
+        "url": "https://www.google.com/maps?q=25.190054,55.3924837"
+    },
+    {
+        "name": "KFC  Lulu Mall ",
+        "lat": 25.11875,
+        "lng": 56.3286109999999,
+        "url": "https://www.google.com/maps?q=25.11875,56.3286109999999"
+    },
+    {
+        "name": "KFC Jebel Ali EPPCO ",
+        "lat": 25.011778,
+        "lng": 55.095056,
+        "url": "https://www.google.com/maps?q=25.011778,55.095056"
+    },
+    {
+        "name": "KFC Fujairah Port",
+        "lat": 25.1617779999999,
+        "lng": 56.3515559999999,
+        "url": "https://www.google.com/maps?q=25.1617779999999,56.3515559999999"
+    },
+    {
+        "name": "KFC, Jumeirah 2, Dubai",
+        "lat": 25.1973059999999,
+        "lng": 55.246528,
+        "url": "https://www.google.com/maps?q=25.1973059999999,55.246528"
+    },
+    {
+        "name": "KFC Dubai land",
+        "lat": 25.092972,
+        "lng": 55.380778,
+        "url": "https://www.google.com/maps?q=25.092972,55.380778"
+    },
+    {
+        "name": "KFC Hamad Bin Abdulla Rd",
+        "lat": 25.1224909,
+        "lng": 56.3317902999999,
+        "url": "https://www.google.com/maps?q=25.1224909,56.3317902999999"
+    }
+];
+        const map = L.map('map').setView([25.1971068, 55.276678], 8);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+        stores.forEach(store => {
+            const marker = L.marker([store.lat, store.lng], { icon: kfcIcon }).addTo(map)
+                .bindPopup(`<strong style="color: #d62300; font-size: 1.2em;">${store.name}</strong><br><a href="${store.url}" target="_blank" style="color: #007bff;">Open in Google Maps</a>`);
+        });
+
+        // Show welcome popup
+        const welcomePopup = L.popup()
+            .setLatLng([25.1971068, 55.276678])
+            .setContent('<b>Welcome to KFC UAE!</b><br>Click "Find Nearest Store" to locate the nearest KFC.')
+            .openOn(map);
+
+        function getLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(showNearestStore);
+            } else {
+                alert("Geolocation is not supported by this browser.");
+            }
+        }
+        function showNearestStore(position) {
+            const userLat = position.coords.latitude;
+            const userLng = position.coords.longitude;
+            let nearestStore = null;
+            let minDistance = Infinity;
+            stores.forEach(store => {
+                const distance = getDistance(userLat, userLng, store.lat, store.lng);
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    nearestStore = store;
+                }
+            });
+            if (nearestStore) {
+                alert(`The nearest store is: ${nearestStore.name}`);
+                window.open(nearestStore.url, "_blank");
+            }
+        }
+        function getDistance(lat1, lng1, lat2, lng2) {
+            const R = 6371; // Radius of the Earth in km
+            const dLat = deg2rad(lat2 - lat1);
+            const dLng = deg2rad(lng2 - lng1);
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                      Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+                      Math.sin(dLng / 2) * Math.sin(dLng / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            const distance = R * c; // Distance in km
+            return distance;
+        }
+        function deg2rad(deg) {
+            return deg * (Math.PI / 180);
+        }
+    </script>
+</body>
+</html>
